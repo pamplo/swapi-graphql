@@ -14,6 +14,7 @@ import {
   GraphQLList,
   GraphQLObjectType,
   GraphQLSchema,
+  GraphQLString,
 } from 'graphql';
 
 import {
@@ -105,6 +106,55 @@ full "{ edges { node } }" version should be used instead.`,
 }
 
 /**
+ * Creates a special connection for people.
+ */
+function rootPeopleConnection() {
+  const name = 'People';
+  const swapiType = 'people';
+  const rootConnectionPeople = rootConnection(name, swapiType);
+  return {
+    type: rootConnectionPeople.type,
+    args: {
+      ...rootConnectionPeople.args,
+      name: {
+        type: GraphQLString,
+        description: `Filter by person's name`,
+      },
+      gender: {
+        type: GraphQLString,
+        description: `Filter by person's gender`,
+      },
+      birthYear: {
+        type: GraphQLString,
+        description: `Filter by person's birth year`,
+      },
+    },
+    resolve: async (_, args) => {
+      const { objects } = await getObjectsByType(swapiType);
+      const filteredObjects = objects.filter(person => {
+        if (
+          args.name &&
+          person.name.toLowerCase().indexOf(args.name.toLowerCase()) === -1
+        ) {
+          return false;
+        }
+        if (args.gender && person.gender !== args.gender) {
+          return false;
+        }
+        if (args.birthYear && person.birth_year !== args.birthYear) {
+          return false;
+        }
+        return true;
+      });
+      return {
+        ...connectionFromArray(filteredObjects, args),
+        totalCount: filteredObjects.length,
+      };
+    },
+  };
+}
+
+/**
  * The GraphQL type equivalent of the Root resource
  */
 const rootType = new GraphQLObjectType({
@@ -112,7 +162,7 @@ const rootType = new GraphQLObjectType({
   fields: () => ({
     allFilms: rootConnection('Films', 'films'),
     film: rootFieldByID('filmID', 'films'),
-    allPeople: rootConnection('People', 'people'),
+    allPeople: rootPeopleConnection(),
     person: rootFieldByID('personID', 'people'),
     allPlanets: rootConnection('Planets', 'planets'),
     planet: rootFieldByID('planetID', 'planets'),

@@ -1,3 +1,7 @@
+## Modifications from the original repo
+Added 3 variables to allPeople's query, enabling the filter of people
+by name, gender and birth year.
+
 SWAPI GraphQL Wrapper
 =====================
 
